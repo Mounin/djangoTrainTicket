@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.http import JsonResponse
 from django.utils import timezone
 from django.core import serializers

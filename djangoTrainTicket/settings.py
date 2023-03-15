@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "pyTrainTicket",
     'corsheaders',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

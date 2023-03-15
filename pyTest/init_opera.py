@@ -11,13 +11,13 @@ from Train_Ticket_API import *
 if __name__ == '__main__':
     # admin_api
     print("测试开始")
-    create_users(500)
+    create_users(100)
 
     print("用户添加完毕！")
 
     arrival_rate = 200
     # 负载运行时间
-    runtime = 60
+    runtime = 30
     start_time = time.time()
     print("开始测试 用户启动间隔-- %s ms, 运行时间--%s s" % (arrival_rate, runtime))
     start_load_test(arrival_rate, runtime)
