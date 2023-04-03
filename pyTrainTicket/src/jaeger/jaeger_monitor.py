@@ -17,6 +17,7 @@ from pyTrainTicket.models import JaegerMonitor
 
 
 def jaeger_get_monitor():
+    print("开始资源监控")
     # 获取所有的trace
     traces_all = Trace.objects.all()
     traces = []
@@ -42,7 +43,6 @@ def jaeger_get_monitor():
             span['resourceData'] = [
                 {
                     'CPU_usage': 'CPU_usage',
-                    'CPU_user': 'CPU_user',
                     'memory_bandwidth_usage': 'memory_bandwidth_usage',
                     'memory_usage': 'memory_usage',
                     'disk_write': 'disk_write',
@@ -56,39 +56,33 @@ def jaeger_get_monitor():
 
 
 def jaeger_monitor_promQL(span_id, ms_name, start_time, end_time):
-    # CPU系统态利用率
-    CPU_usage = 'sum(rate(container_cpu_usage_seconds_total{pod=~"%s.*"}[1m])) by (pod, namespace, job, instance) / (sum(container_spec_cpu_quota{pod=~"%s.*"}/100000) by (pod, namespace, job, instance)) * 100 ' % (
-    ms_name, ms_name)
+    print("开开")
+    # CPU利用率
+    CPU_usage = 'sum by(instance, pod) (rate(container_cpu_usage_seconds_total{pod=~"%s.*"}[1m])) * 100' % ms_name
     res_cpu_usage = jaeger_monitor('CPU_usage', CPU_usage, span_id, ms_name, start_time, end_time)
-    # CPU用户态利用率
-    CPU_user = 'sum(rate(container_cpu_user_seconds_total{pod=~"%s.*"}[1m])) by (pod, namespace, job, instance) / (sum(container_spec_cpu_quota{pod=~"%s.*"}/100000) by (pod, namespace, job, instance)) * 100' % (
-    ms_name, ms_name)
-    res_cpu_user = jaeger_monitor('CPU_user', CPU_user, span_id, ms_name, start_time, end_time)
-    # 内存带宽占用率
-    memory_bandwidth_usage = 'sum(rate(container_memory_working_set_bytes{container!="POD",pod=~"%s.*"}[5m])) by (pod, container, namespace) / sum(container_spec_memory_limit_bytes{container!="POD",pod=~"%s.*"}) by (pod, container, namespace)' % (
-    ms_name, ms_name)
-    res_memory_bandwidth_usage = jaeger_monitor('memory_bandwidth_usage', memory_bandwidth_usage, span_id, ms_name, start_time,
-                                                  end_time)
+    # 内存利用率
+    memory_bandwidth_usage = 'sum(container_memory_working_set_bytes{pod=~"%s.*"}) by(namespace, pod, instance) / sum(container_spec_memory_limit_bytes{pod=~"%s.*"}) by(namespace, pod, instance) * 100' % (
+        ms_name, ms_name)
+    res_memory_bandwidth_usage = jaeger_monitor('memory_bandwidth_usage', memory_bandwidth_usage, span_id, ms_name,
+                                                start_time,
+                                                end_time)
     # 内存使用量
-    memory_usage = 'sum(container_memory_working_set_bytes{container!="POD",pod=~"%s.*"}) by (namespace, pod, container)' % ms_name
+    memory_usage = 'sum(container_memory_working_set_bytes {pod=~"%s.*"}) by(namespace, pod, instance)' % ms_name
     res_memory_usage = jaeger_monitor('memory_usage', memory_usage, span_id, ms_name, start_time, end_time)
-    # 磁盘写入带宽占用率
-    disk_write = 'sum(rate(container_fs_writes_bytes_total{pod=~"%s.*"}[5m])) by (pod)' % ms_name
+    # 磁盘写入带宽
+    disk_write = 'sum(rate(container_fs_writes_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % ms_name
     res_disk_write = jaeger_monitor('disk_write', disk_write, span_id, ms_name, start_time, end_time)
-    # 磁盘读取带宽占用率
-    disk_read = 'sum(rate(container_fs_reads_bytes_total{pod=~"%s.*"}[5m])) by (pod)' % ms_name
+    # 磁盘读取带宽
+    disk_read = 'sum(rate(container_fs_reads_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % ms_name
     res_disk_read = jaeger_monitor('disk_read', disk_read, span_id, ms_name, start_time, end_time)
-    # 网络写入带宽占用率
-    net_write = 'sum by (pod) (irate(container_network_transmit_bytes_total{pod=~"%s.*"}[5m])) / count by (pod) (kube_pod_container_info{pod=~"%s.*"}) * 8' % (
-    ms_name, ms_name)
+    # 网络写入带宽
+    net_write = 'sum(rate(container_network_transmit_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % ms_name
     res_net_write = jaeger_monitor('net_write', net_write, span_id, ms_name, start_time, end_time)
     # 网络读取带宽占用率
-    net_read = 'sum by (pod) (irate(container_network_receive_bytes_total{pod=~"%s.*"}[5m])) / count by (pod) (kube_pod_container_info{pod=~"%s.*"}) * 8' % (
-    ms_name, ms_name)
+    net_read = 'sum(rate(container_network_receive_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % ms_name
     res_net_read = jaeger_monitor('net_read', net_read, span_id, ms_name, start_time, end_time)
     return {
         'cpu_usage': res_cpu_usage,
-        'cpu_user': res_cpu_user,
         'memory_bandwidth_usage': res_memory_bandwidth_usage,
         'memory_usage': res_memory_usage,
         'disk_write': res_disk_write,
@@ -147,10 +141,6 @@ def update_database(span_id, ms_name, metric_name, metric_value):
         JaegerMonitor.objects.update_or_create(
             span_id=span_id, ms_name=ms_name, defaults={'CPU_usage': metric_value}
         )
-    elif metric_name == "CPU_user":
-        JaegerMonitor.objects.update_or_create(
-            span_id=span_id, ms_name=ms_name, defaults={'CPU_user': metric_value}
-        )
     elif metric_name == "memory_bandwidth_usage":
         JaegerMonitor.objects.update_or_create(
             span_id=span_id, ms_name=ms_name, defaults={'memory_bandwidth_usage': metric_value}
@@ -179,6 +169,7 @@ def update_database(span_id, ms_name, metric_name, metric_value):
 
 # 从数据库中获取资源数据
 def get_resource_from_db():
+    print("获取trace数据")
     # 获取所有的trace
     traces_all = Trace.objects.all()
     traces = []
@@ -194,7 +185,6 @@ def get_resource_from_db():
             'start_time': str(datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")),
             'duration': str(timedelta(microseconds=duration))
         })
-
     for trace in traces:
         # 获取traces下的所有span
         trace_id = trace['trace_id']
@@ -213,15 +203,14 @@ def get_resource_from_db():
                 'end_time': str(datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")),
                 'duration': str(timedelta(microseconds=duration)),
             })
-
         for span in trace['spansData']:
             # 获取对应时间戳的资源利用情况
             span_id = span['span_id']
             monitor = JaegerMonitor.objects.filter(span_id=span_id)
+            print(span_id, json.loads(serializers.serialize("json", monitor)))
             resource = json.loads(serializers.serialize("json", monitor))[0]['fields']
             span['resourceData'] = [{
                 'CPU_usage': resource['CPU_usage'],
-                'CPU_user': resource['CPU_user'],
                 'memory_bandwidth_usage': resource['memory_bandwidth_usage'],
                 'memory_usage': resource['memory_usage'],
                 'disk_write': resource['disk_write'],
@@ -244,7 +233,7 @@ def hot_ms():
             if trace not in trace_list:
                 trace_list.append(trace)
         JaegerHotMS.objects.update_or_create(
-         ms_name=ms, defaults={'num': len(trace_list)}
+            ms_name=ms, defaults={'num': len(trace_list)}
         )
 
     hot_data_all = json.loads(serializers.serialize("json", JaegerHotMS.objects.filter()))

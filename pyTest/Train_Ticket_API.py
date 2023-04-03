@@ -60,11 +60,13 @@ class User:
                                      "username": self.username,
                                      "password": self.password})
         try:
-            json.loads(response.text)
+            # print(response.text)
+            # json.loads(response.text)
             response_as_json = response.json()["data"]
-            token = response_as_json["token"]
-            self.bearer = "Bearer " + token
-            self.user_id = response_as_json["userId"]
+            if response_as_json is not None:
+                token = response_as_json["token"]
+                self.bearer = "Bearer " + token
+                self.user_id = response_as_json["userId"]
         except json.JSONDecodeError:
             pass
 
@@ -456,7 +458,7 @@ def user_tasks(uuid):
     #     tasks = random.choice([G_tourist_task, P_tourist_task])
     # tasks = random.choice([G_tourist_task, P_tourist_task])
     API_TASK = ['get_foods', 'get_foods']
-    # tasks = ZKT_user_task
+    tasks = G_user_task_consign
     # tasks = random.choices([G_user_task, G_user_task_rebook, ZKT_user_task, ZKT_user_task_rebook],
     #                        weights=[0.3, 0.3, 0.2, 0.2])[0]
     # tasks = API_TASK
@@ -500,10 +502,10 @@ def start_load_test(lambd, runtime):
 if __name__ == '__main__':
     # 用户启动间隔
     # arrival_rate = int(sys.argv[1])
-    arrival_rate = 200
+    arrival_rate = 500
     # 负载运行时间
     # runtime = int(sys.argv[2])
-    runtime = 30
+    runtime = 1
     start_time = time.time()
     print("开始测试 用户启动间隔-- %s ms, 运行时间--%s s" % (arrival_rate, runtime))
     start_load_test(arrival_rate, runtime)

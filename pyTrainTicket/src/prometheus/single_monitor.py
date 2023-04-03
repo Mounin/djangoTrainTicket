@@ -12,34 +12,30 @@ from pyTrainTicket.models import PromSingle
 
 
 def search_all_promQL():
-    # CPU系统态利用率
-    CPU_usage = 'sum(rate(container_cpu_usage_seconds_total{pod=~"ts.*"}[1m])) by (pod, namespace, job, instance) / (sum(container_spec_cpu_quota{pod=~"ts.*"}/100000) by (pod, namespace, job, instance)) * 100 '
+    # CPU利用率
+    CPU_usage = 'sum by(instance, pod) (rate(container_cpu_usage_seconds_total{pod=~"ts.*"}[1m])) * 100'
     res_cpu_usage = single_monitor('CPU_usage', CPU_usage)
-    # CPU用户态利用率
-    CPU_user = 'sum(rate(container_cpu_user_seconds_total{pod=~"ts.*"}[1m])) by (pod, namespace, job, instance) / (sum(container_spec_cpu_quota{pod=~"ts.*"}/100000) by (pod, namespace, job, instance)) * 100'
-    res_cpu_user = single_monitor('CPU_user', CPU_user)
-    # 内存带宽占用率
-    memory_bandwidth_usage = 'sum(rate(container_memory_working_set_bytes{container!="POD",pod=~"ts-.*"}[5m])) by (pod, container, namespace) / sum(container_spec_memory_limit_bytes{container!="POD",pod=~"ts-.*"}) by (pod, container, namespace)'
-    res_memory_bandwidth_usage = single_monitor('memory_bandwidth_usage', memory_bandwidth_usage )
+    # 内存利用率
+    memory_bandwidth_usage = 'sum(container_memory_working_set_bytes{pod=~"ts.*"}) by(namespace, pod, instance) / sum(container_spec_memory_limit_bytes{pod=~"ts.*"}) by(namespace, pod, instance) * 100'
+    res_memory_bandwidth_usage = single_monitor('memory_bandwidth_usage', memory_bandwidth_usage)
     # 内存使用量
-    memory_usage = 'sum(container_memory_working_set_bytes{container!="POD",pod=~"ts-.*"}) by (namespace, pod, container)'
+    memory_usage = 'sum(container_memory_working_set_bytes {pod=~"ts.*"}) by(namespace, pod, instance)'
     res_memory_usage = single_monitor('memory_usage', memory_usage)
-    # 磁盘写入带宽占用率
-    disk_write = 'sum(rate(container_fs_writes_bytes_total{pod=~"ts-.*"}[5m])) by (pod)'
+    # 磁盘写入带宽
+    disk_write = 'sum(rate(container_fs_writes_bytes_total{pod=~"ts.*"}[1m])) by(namespace, pod, instance)'
     res_disk_write = single_monitor('disk_write', disk_write)
-    # 磁盘读取带宽占用率
-    disk_read = 'sum(rate(container_fs_reads_bytes_total{pod=~"ts-.*"}[5m])) by (pod)'
+    # 磁盘读取带宽
+    disk_read = 'sum(rate(container_fs_reads_bytes_total{pod=~"ts.*"}[1m])) by(namespace, pod, instance)'
     res_disk_read = single_monitor('disk_read', disk_read)
-    # 网络写入带宽占用率
-    net_write = 'sum by (pod) (irate(container_network_transmit_bytes_total{pod=~"ts-.*"}[5m])) / count by (pod) (kube_pod_container_info{pod=~"ts-.*"}) * 8'
+    # 网络写入带宽
+    net_write = 'sum(rate(container_network_transmit_bytes_total{pod=~"ts.*"}[1m])) by(namespace, pod, instance)'
     res_net_write = single_monitor('net_write', net_write)
-    # 网络读取带宽占用率
-    net_read = 'sum by (pod) (irate(container_network_receive_bytes_total{pod=~"ts-.*"}[5m])) / count by (pod) (kube_pod_container_info{pod=~"ts-.*"}) * 8'
+    # 网络读取带宽
+    net_read = 'sum(rate(container_network_receive_bytes_total{pod=~"ts.*"}[1m])) by(namespace, pod, instance)'
     res_net_read = single_monitor('net_read', net_read)
 
     return [
         res_cpu_usage,
-        res_cpu_user,
         res_memory_bandwidth_usage,
         res_memory_usage,
         res_disk_write,
@@ -95,10 +91,6 @@ def update_database(pod_name, metric_name, metric_value):
     if metric_name == "CPU_usage":
         PromSingle.objects.update_or_create(
             ms_name=pod_name, defaults={'CPU_usage': metric_value}
-        )
-    elif metric_name == "CPU_user":
-        PromSingle.objects.update_or_create(
-            ms_name=pod_name, defaults={'CPU_user': metric_value}
         )
     elif metric_name == "memory_bandwidth_usage":
         PromSingle.objects.update_or_create(

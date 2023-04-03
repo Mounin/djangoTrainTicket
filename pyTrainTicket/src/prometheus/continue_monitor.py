@@ -18,34 +18,30 @@ def search_continue_promQL(ms_name, start_time, end_time):
     else:
         name = 'ts'
     print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", name)
-    # CPU系统态利用率
-    CPU_usage = 'sum(rate(container_cpu_usage_seconds_total{pod=~"%s.*"}[1m])) by (pod, namespace, job, instance) / (sum(container_spec_cpu_quota{pod=~"%s.*"}/100000) by (pod, namespace, job, instance)) * 100 ' % (name, name)
+    # CPU利用率
+    CPU_usage = 'sum by(instance, pod) (rate(container_cpu_usage_seconds_total{pod=~"%s.*"}[1m])) * 100' % name
     res_cpu_usage = continue_monitor('CPU_usage', CPU_usage, start_time, end_time)
-    # CPU用户态利用率
-    CPU_user = 'sum(rate(container_cpu_user_seconds_total{pod=~"%s.*"}[1m])) by (pod, namespace, job, instance) / (sum(container_spec_cpu_quota{pod=~"%s.*"}/100000) by (pod, namespace, job, instance)) * 100' % (name, name)
-    res_cpu_user = continue_monitor('CPU_user', CPU_user, start_time, end_time)
-    # 内存带宽占用率
-    memory_bandwidth_usage = 'sum(rate(container_memory_working_set_bytes{container!="POD",pod=~"%s.*"}[5m])) by (pod, container, namespace) / sum(container_spec_memory_limit_bytes{container!="POD",pod=~"%s.*"}) by (pod, container, namespace)' % (name, name)
+    # 内存利用率
+    memory_bandwidth_usage = 'sum(container_memory_working_set_bytes{pod=~"%s.*"}) by(namespace, pod, instance) / sum(container_spec_memory_limit_bytes{pod=~"%s.*"}) by(namespace, pod, instance) * 100' % (name, name)
     res_memory_bandwidth_usage = continue_monitor('memory_bandwidth_usage', memory_bandwidth_usage, start_time, end_time)
     # 内存使用量
-    memory_usage = 'sum(container_memory_working_set_bytes{container!="POD",pod=~"%s.*"}) by (namespace, pod, container)' % name
+    memory_usage = 'sum(container_memory_working_set_bytes {pod=~"%s.*"}) by(namespace, pod, instance)' % name
     res_memory_usage = continue_monitor('memory_usage', memory_usage, start_time, end_time)
-    # 磁盘写入带宽占用率
-    disk_write = 'sum(rate(container_fs_writes_bytes_total{pod=~"%s.*"}[5m])) by (pod)' % name
+    # 磁盘写入带宽
+    disk_write = 'sum(rate(container_fs_writes_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % name
     res_disk_write = continue_monitor('disk_write', disk_write, start_time, end_time)
-    # 磁盘读取带宽占用率
-    disk_read = 'sum(rate(container_fs_reads_bytes_total{pod=~"%s.*"}[5m])) by (pod)' % name
+    # 磁盘读取带宽
+    disk_read = 'sum(rate(container_fs_reads_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % name
     res_disk_read = continue_monitor('disk_read', disk_read, start_time, end_time)
-    # 网络写入带宽占用率
-    net_write = 'sum by (pod) (irate(container_network_transmit_bytes_total{pod=~"%s.*"}[5m])) / count by (pod) (kube_pod_container_info{pod=~"%s.*"}) * 8' % (name, name)
+    # 网络写入带宽
+    net_write = 'sum(rate(container_network_receive_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % name
     res_net_write = continue_monitor('net_write', net_write, start_time, end_time)
-    # 网络读取带宽占用率
-    net_read = 'sum by (pod) (irate(container_network_receive_bytes_total{pod=~"%s.*"}[5m])) / count by (pod) (kube_pod_container_info{pod=~"%s.*"}) * 8' % (name, name)
+    # 网络读取带宽
+    net_read = 'sum(rate(container_network_transmit_bytes_total{pod=~"%s.*"}[1m])) by(namespace, pod, instance)' % name
     res_net_read = continue_monitor('net_read', net_read, start_time, end_time)
 
     return [
         res_cpu_usage,
-        res_cpu_user,
         res_memory_bandwidth_usage,
         res_memory_usage,
         res_disk_write,
@@ -104,10 +100,6 @@ def update_database(pod_name, metric_name, metric_value, time):
         PromContinue.objects.update_or_create(
             ms_name=pod_name, start_time=time, defaults={'CPU_usage': metric_value}
         )
-    elif metric_name == "CPU_user":
-        PromContinue.objects.update_or_create(
-            ms_name=pod_name, start_time=time, defaults={'CPU_user': metric_value}
-        )
     elif metric_name == "memory_bandwidth_usage":
         PromContinue.objects.update_or_create(
             ms_name=pod_name, start_time=time, defaults={'memory_bandwidth_usage': metric_value}
@@ -147,7 +139,6 @@ def prom_data_opera():
     # 监控指标
     metric_list = [
         'CPU_usage',
-        'CPU_user',
         'memory_bandwidth_usage',
         'memory_usage',
         'disk_write',
