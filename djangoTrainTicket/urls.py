@@ -37,7 +37,6 @@ schema_view = get_schema_view(
 # 这里结束
 
 MSMonitor = routers.DefaultRouter()
-# promSingle.register(r'promSingle', views.PromSingleViewSet)
 
 urlpatterns = [
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
@@ -46,7 +45,6 @@ urlpatterns = [
     path('', include(MSMonitor.urls)),
     path('test/', views.test),
     path("admin/", admin.site.urls),
-    # path('show_single_mss/', views.show_single_mss),
     path('show_single_mss/', views.PromSingleViewSet.as_view({'get': 'list'})),
     path('single_monitor/', views.PromSingleViewSet.as_view({'get': 'single_monitor'})),
     path('show_continue_mss/', views.PromContinueViewSet.as_view({'get': 'show_continue_mss'})),
@@ -58,4 +56,5 @@ urlpatterns = [
     path('get_monitor/', views.JaegerMonitorViewSet.as_view({'get': 'get_monitor'})),
     path('get_resource/', views.JaegerMonitorViewSet.as_view({'get': 'get_resource'})),
     path('get_hot_ms/', views.JaegerHotMSViewSet.as_view({'get': 'get_hot_ms'})),
+    path('login/', views.UserViewSet.as_view({'post': 'check_login'})),
 ]

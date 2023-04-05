@@ -2,6 +2,14 @@ from django.db import models
 
 
 # Create your models here.
+# 登录用户
+class User(models.Model):
+    class Meta:
+        db_table = "user"
+    id = models.IntegerField(primary_key=True)
+    username = models.CharField(max_length=64)
+    password = models.CharField(max_length=64)
+
 
 class PromSingle(models.Model):
     class Meta:

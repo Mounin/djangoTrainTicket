@@ -1,6 +1,9 @@
 import json
 from datetime import datetime
+
+from django.contrib.auth import authenticate, login
 from django.http import JsonResponse, HttpResponse
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.core import serializers
 from rest_framework.response import Response
@@ -11,6 +14,26 @@ from pyTrainTicket.src.prometheus.continue_monitor import search_continue_promQL
 from pyTrainTicket.src.prometheus.single_monitor import search_all_promQL
 from rest_framework import viewsets, permissions
 from pyTrainTicket.serializers import *
+
+
+# 用户
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def check_login(self, request):
+        if request.method == 'POST':
+            username = request.data['username']
+            password = request.data['password']
+            user = User.objects.filter(username=username, password=password)
+            if user.exists():
+                return JsonResponse({'success': True})
+            else:
+                try:
+                    user = User.objects.get(username=username)
+                    return JsonResponse({'success': False, 'message': '密码不正确'})
+                except User.DoesNotExist:
+                    return JsonResponse({'success': False, 'message': '用户名不存在'})
 
 
 # 单点监控
