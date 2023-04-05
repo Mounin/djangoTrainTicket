@@ -41,9 +41,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "pyTrainTicket",
+    'drf_yasg2',
+    'markdown',
+    'django_filters',
+    'rest_framework',
     'corsheaders',
     'django_extensions',
+    "pyTrainTicket",
 ]
 
 MIDDLEWARE = [
@@ -51,7 +55,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     'corsheaders.middleware.CorsMiddleware',   # add
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
