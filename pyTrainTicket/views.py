@@ -21,6 +21,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    # 登录
     def check_login(self, request):
         if request.method == 'POST':
             username = request.data['username']
@@ -34,6 +35,29 @@ class UserViewSet(viewsets.ModelViewSet):
                     return JsonResponse({'success': False, 'message': '密码不正确'})
                 except User.DoesNotExist:
                     return JsonResponse({'success': False, 'message': '用户名不存在'})
+
+    # 检查用户名是否存在
+    def get_object(self, PK=None):
+        username = self.request.query_params.get('username')
+        try:
+            user = User.objects.get(username=username)
+            return JsonResponse({'isExist': True, 'message': '用户名已存在'})
+        except User.DoesNotExist:
+            return JsonResponse({'isExist': False, 'message': '用户名可用'})
+
+    # 注册
+    def register(self, request):
+        if request.method == 'POST':
+            username = request.data['username']
+            password = request.data['password']
+            user = User.objects.filter(username=username)
+            if user.exists():
+                return JsonResponse({'success': False, 'message': '用户名已存在'})
+            else:
+                User.objects.create(
+                    username=username, password=password
+                )
+                return JsonResponse({'success': True, 'message': '注册成功'})
 
 
 # 单点监控

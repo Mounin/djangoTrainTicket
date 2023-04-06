@@ -20,20 +20,21 @@ from pyTrainTicket import views
 from rest_framework import permissions, serializers, viewsets, routers
 from drf_yasg2.views import get_schema_view
 from drf_yasg2 import openapi
+
 schema_view = get_schema_view(
-      openapi.Info(
-          title="MSMonitor API",
-          default_version='v1.0',
-          description="To monitor microservice performance metrics and request paths.",
-          # 服务条款
-          # terms_of_service="http://localhost:5173/",
-          # email
-          contact=openapi.Contact(email="honvinzhou@163.com"),
-          license=openapi.License(name="BSD License"),
-      ),
-      public=True,
-      permission_classes=(permissions.AllowAny,),
-   )
+    openapi.Info(
+        title="MSMonitor API",
+        default_version='v1.0',
+        description="To monitor microservice performance metrics and request paths.",
+        # 服务条款
+        # terms_of_service="http://localhost:5173/",
+        # email
+        contact=openapi.Contact(email="honvinzhou@163.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 # 这里结束
 
 MSMonitor = routers.DefaultRouter()
@@ -57,4 +58,6 @@ urlpatterns = [
     path('get_resource/', views.JaegerMonitorViewSet.as_view({'get': 'get_resource'})),
     path('get_hot_ms/', views.JaegerHotMSViewSet.as_view({'get': 'get_hot_ms'})),
     path('login/', views.UserViewSet.as_view({'post': 'check_login'})),
+    path('register/', views.UserViewSet.as_view({'post': 'register'})),
+    path('check_username/', views.UserViewSet.as_view({'get': 'get_object'})),
 ]
